@@ -1,6 +1,8 @@
 # Splunk-otel-python-instrumentation
 Docker Compose de una aplicación en python instrumentado junto a un collector de opentelemetry.
 
+![image](https://github.com/user-attachments/assets/10bec974-817a-4faf-836c-9274a8c4d204)
+
 
 1- Solamente se requiere copiar el repositorio:
 ````bash
