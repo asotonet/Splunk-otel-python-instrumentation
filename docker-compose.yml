@@ -1,0 +1,48 @@
+services:
+  my-app:
+    image: python:3.9
+    container_name: my-app
+    working_dir: /app/automatic
+    volumes:
+      - .:/app
+    ports:
+      - "5000:5000"
+    command: >
+      sh -c "pip install --upgrade pip && pip install -r requirements.txt && splunk-py-trace-bootstrap && splunk-py-trace flask run --host=0.0.0.0"
+    environment:
+      - OTEL_SERVICE_NAME=python-lab
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=python-lab,service.version=1.0
+    depends_on:
+      - otel-collector
+
+  otel-collector:
+    image: quay.io/signalfx/splunk-otel-collector:latest
+    container_name: otel-collector
+    deploy:
+      resources:
+        limits:
+          memory: 125M
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol-config.yml"]
+    volumes:
+      - ./splunk/otelcol-config.yml:/etc/otelcol-config.yml
+    environment:
+      - SPLUNK_ACCESS_TOKEN=accesstoken
+      - SPLUNK_REALM=us1
+    ports:
+      - "13133:13133"
+      - "14250:14250"
+      - "14268:14268"
+      - "4317:4317"
+      - "6060:6060"
+      - "8888:8888"
+      - "9080:9080"
+      - "9411:9411"
+      - "9943:9943"
+
+  requestor:
+    image: curlimages/curl:latest  # Usa la imagen con curl para hacer solicitudes HTTP
+    depends_on:
+      - my-app
+    entrypoint: /bin/sh -c "while true; do curl -s http://my-app:5000/; curl -s http://my-app:5000/somepath; curl -s http://my-app:5000/anotherpath; sleep 5; done"
